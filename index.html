@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GIF to Spritesheet Converter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      text-align: center;
+    }
+    canvas {
+      display: none;
+    }
+    #output {
+      margin-top: 20px;
+    }
+    img {
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>GIF to Spritesheet Converter</h1>
+    <p>Select a GIF, output resolution, and chroma key color (optional).</p>
+    <input type="file" id="gifInput" accept="image/gif">
+    <label for="resolution">Resolution:</label>
+    <select id="resolution">
+      <option value="420">420p</option>
+      <option value="720">720p</option>
+      <option value="1080">1080p</option>
+    </select>
+    <label for="chromaKey">Chroma Key:</label>
+    <input type="color" id="chromaKey" value="#00ff00">
+    <button id="convertBtn">Convert to Spritesheet</button>
+    <canvas id="canvas"></canvas>
+    <div id="output"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gif.js"></script>
+  <script>
+    const gifInput = document.getElementById('gifInput');
+    const resolution = document.getElementById('resolution');
+    const chromaKey = document.getElementById('chromaKey');
+    const convertBtn = document.getElementById('convertBtn');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const output = document.getElementById('output');
+
+    convertBtn.addEventListener('click', async () => {
+      const file = gifInput.files[0];
+      if (!file) {
+        alert('Please upload a GIF file.');
+        return;
+      }
+
+      const resolutionValue = parseInt(resolution.value);
+      const chromaKeyColor = chromaKey.value; // Get chroma key color
+      const gif = new window.SuperGif({ gif: file });
+
+      gif.load(() => {
+        const frames = gif.get_frames();
+        const frameWidth = gif.get_canvas().width;
+        const frameHeight = gif.get_canvas().height;
+
+        // Scale resolution
+        const scaleFactor = resolutionValue / Math.max(frameWidth, frameHeight);
+        const scaledWidth = Math.round(frameWidth * scaleFactor);
+        const scaledHeight = Math.round(frameHeight * scaleFactor);
+
+        canvas.width = scaledWidth * frames.length;
+        canvas.height = scaledHeight;
+
+        frames.forEach((frame, index) => {
+          const imgData = frame.get_image();
+
+          // Apply chroma key transparency
+          for (let i = 0; i < imgData.data.length; i += 4) {
+            const r = imgData.data[i];
+            const g = imgData.data[i + 1];
+            const b = imgData.data[i + 2];
+
+            const chromaRGB = hexToRgb(chromaKeyColor);
+            if (r === chromaRGB.r && g === chromaRGB.g && b === chromaRGB.b) {
+              imgData.data[i + 3] = 0; // Set alpha to 0
+            }
+          }
+
+          ctx.putImageData(imgData, index * scaledWidth, 0, 0, 0, scaledWidth, scaledHeight);
+        });
+
+        const spritesheet = canvas.toDataURL();
+        output.innerHTML = `<h3>Spritesheet</h3><img src="${spritesheet}" alt="Spritesheet">`;
+        const downloadLink = document.createElement('a');
+        downloadLink.href = spritesheet;
+        downloadLink.download = 'spritesheet.png';
+        downloadLink.textContent = 'Download Spritesheet';
+        output.appendChild(downloadLink);
+      });
+    });
+
+    // Helper function to convert HEX to RGB
+    function hexToRgb(hex) {
+      const bigint = parseInt(hex.slice(1), 16);
+      return {
+        r: (bigint >> 16) & 255,
+        g: (bigint >> 8) & 255,
+        b: bigint & 255
+      };
+    }
+  </script>
+</body>
+</html>
