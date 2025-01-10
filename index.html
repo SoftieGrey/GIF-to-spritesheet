@@ -22,6 +22,7 @@
     }
     img {
       max-width: 100%;
+      margin: 10px 0;
     }
   </style>
 </head>
@@ -95,12 +96,19 @@
           ctx.putImageData(imgData, index * scaledWidth, 0, 0, 0, scaledWidth, scaledHeight);
         });
 
-        const spritesheet = canvas.toDataURL();
-        output.innerHTML = `<h3>Spritesheet</h3><img src="${spritesheet}" alt="Spritesheet">`;
+        // Generate spritesheet as PNG
+        const spritesheet = canvas.toDataURL('image/png');
+
+        // Display preview
+        output.innerHTML = `<h3>Spritesheet Preview</h3><img src="${spritesheet}" alt="Spritesheet Preview">`;
+
+        // Create download link
         const downloadLink = document.createElement('a');
         downloadLink.href = spritesheet;
         downloadLink.download = 'spritesheet.png';
         downloadLink.textContent = 'Download Spritesheet';
+        downloadLink.style.display = 'block';
+        downloadLink.style.marginTop = '10px';
         output.appendChild(downloadLink);
       });
     });
